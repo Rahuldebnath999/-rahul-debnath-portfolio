@@ -1,0 +1,22 @@
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archives and local backups
+assets/archive/
+*.bak
+*.tmp
+*.swp
+*.draft
+
+# Node / Environment / IDE
+.env
+.env.*
+.env.local
+.vscode/
+.idea/
