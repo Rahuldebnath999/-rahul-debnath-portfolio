@@ -1,9 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/",
+      "destination": "/rahul-debnath-portfolio2.html"
+    },
+    {
+      "source": "/index",
+      "destination": "/rahul-debnath-portfolio2.html"
+    },
+    {
+      "source": "/index.html",
       "destination": "/rahul-debnath-portfolio2.html"
     }
   ],
