@@ -1371,10 +1371,10 @@
     });
   });
 
-  /* ---------- kinetic typography hover interaction for #feature ("STORIES THAT STAY.") ---------- */
+  /* ---------- kinetic typography hover & touch interaction for #feature ("STORIES THAT STAY.") ---------- */
   (function initKineticTypography(){
     var isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (isTouch || reduced || !isFinePointer) return;
+    if (reduced) return;
 
     var featureSection = document.getElementById('feature');
     var heading = document.getElementById('kineticHeading');
@@ -1407,6 +1407,7 @@
       setTimeout(measureCharPositions, 100);
     }
     window.addEventListener('resize', measureCharPositions, { passive: true });
+    window.addEventListener('orientationchange', function(){ setTimeout(measureCharPositions, 150); }, { passive: true });
 
     var mouseX = -99999, mouseY = -99999;
     var isHovering = false;
@@ -1483,6 +1484,7 @@
       });
     }
 
+    /* ---------- desktop / fine pointer mouse interaction ---------- */
     function onMouseMove(e){
       mouseX = e.clientX;
       mouseY = e.clientY;
@@ -1507,10 +1509,121 @@
       }
     }
 
-    featureSection.addEventListener('mousemove', onMouseMove, { passive: true });
-    featureSection.addEventListener('mouseleave', onMouseLeave, { passive: true });
+    if (isFinePointer) {
+      featureSection.addEventListener('mousemove', onMouseMove, { passive: true });
+      featureSection.addEventListener('mouseleave', onMouseLeave, { passive: true });
+      document.addEventListener('mouseleave', onMouseLeave, { passive: true });
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
-    document.addEventListener('mouseleave', onMouseLeave, { passive: true });
+
+    /* ---------- mobile / touch & pointer interaction ---------- */
+    var touchActive = false;
+    var tapTimeout = null;
+    var touchStartTime = 0;
+    var lastSource = '';
+    var lastTime = 0;
+
+    function handleTouchStart(clientX, clientY, source){
+      var now = Date.now();
+      if (lastTime && (now - lastTime < 45) && lastSource !== source) {
+        return;
+      }
+      lastSource = source;
+      lastTime = now;
+      clearTimeout(tapTimeout);
+
+      if (!charData.length) measureCharPositions();
+
+      touchActive = true;
+      touchStartTime = now;
+      mouseX = clientX;
+      mouseY = clientY;
+      isHovering = true;
+
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(updateKinetic);
+      }
+    }
+
+    function handleTouchMove(clientX, clientY){
+      if (!touchActive) return;
+
+      var hRect = featureH2.getBoundingClientRect();
+      var pad = Math.max(90, window.innerWidth * 0.18);
+
+      if (clientX < hRect.left - pad || clientX > hRect.right + pad ||
+          clientY < hRect.top - pad || clientY > hRect.bottom + pad) {
+        handleTouchEnd();
+        return;
+      }
+
+      mouseX = clientX;
+      mouseY = clientY;
+      isHovering = true;
+
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(updateKinetic);
+      }
+    }
+
+    function handleTouchEnd(){
+      if (!touchActive && !isHovering) return;
+      touchActive = false;
+      clearTimeout(tapTimeout);
+
+      var elapsed = Date.now() - touchStartTime;
+      if (elapsed < 220) {
+        tapTimeout = setTimeout(function(){
+          isHovering = false;
+          mouseX = -99999;
+          mouseY = -99999;
+          resetChars();
+        }, 220 - elapsed);
+      } else {
+        isHovering = false;
+        mouseX = -99999;
+        mouseY = -99999;
+        resetChars();
+      }
+    }
+
+    featureH2.addEventListener('pointerdown', function(e){
+      if (e.pointerType === 'mouse') return;
+      handleTouchStart(e.clientX, e.clientY, 'pointer');
+    }, { passive: true });
+
+    window.addEventListener('pointermove', function(e){
+      if (!touchActive || e.pointerType === 'mouse') return;
+      handleTouchMove(e.clientX, e.clientY);
+    }, { passive: true });
+
+    window.addEventListener('pointerup', function(e){
+      if (e.pointerType === 'mouse') return;
+      handleTouchEnd();
+    }, { passive: true });
+
+    window.addEventListener('pointercancel', function(e){
+      if (e.pointerType === 'mouse') return;
+      handleTouchEnd();
+    }, { passive: true });
+
+    featureH2.addEventListener('touchstart', function(e){
+      if (e.touches && e.touches.length > 0) {
+        handleTouchStart(e.touches[0].clientX, e.touches[0].clientY, 'touch');
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function(e){
+      if (!touchActive) return;
+      if (e.touches && e.touches.length > 0) {
+        handleTouchMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
   })();
 
 
